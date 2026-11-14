@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArenaPulse | Tournament Management Platform (React + Spring Boot + MongoDB)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <!-- React & Babel CDNs for instant Zero-Config browser execution -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: #0a0e17;
+      color: #f1f5f9;
+    }
+    code, pre {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .glass-panel {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .glass-card:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- Main React App Script -->
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // SVG Icons
+    const TrophyIcon = ({ className = "w-5 h-5" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+    );
+    const PlusIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+    );
+    const SparklesIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+    );
+    const SwordsIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/><line x1="13" x2="19" y1="19" y2="13"/><line x1="16" x2="20" y1="16" y2="20"/><line x1="19" x2="21" y1="21" y2="19"/><polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"/><line x1="5" x2="9" y1="14" y2="18"/><line x1="7" x2="4" y1="17" y2="20"/><line x1="3" x2="5" y1="19" y2="21"/></svg>
+    );
+    const UsersIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    );
+    const CheckCircleIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    );
+    const TrashIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+    );
+    const EditIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+    );
+    const ArrowLeftIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+    );
+    const ArrowRightIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+    );
+    const SearchIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    );
+    const AwardIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+    );
+
+    // Initial Demo Dataset
+    const DEMO_TOURNAMENTS = [
+      {
+        id: "tour-101",
+        title: "Valorant Champions Invitational 2026",
+        description: "Tier 1 tactical shooter championship featuring top global esports franchises.",
+        game: "Valorant",
+        format: "SINGLE_ELIMINATION",
+        status: "ONGOING",
+        startDate: "2026-11-15",
+        endDate: "2026-11-20",
+        maxParticipants: 8,
+        currentParticipantsCount: 8,
+        prizePool: "$50,000 USD",
+        location: "Reykjavik Arena & Twitch Stream",
+        rules: "Standard 5v5 defusal. Best of 3 matches, Grand Final Best of 5.",
+        bannerUrl: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1200&q=80"
+      },
+      {
+        id: "tour-102",
+        title: "Apex FC Premier Cup",
+        description: "Premier round-robin tournament for competitive virtual football clubs.",
+        game: "EA Sports FC 25",
+        format: "ROUND_ROBIN",
+        status: "ONGOING",
+        startDate: "2026-11-10",
+        endDate: "2026-11-25",
+        maxParticipants: 4,
+        currentParticipantsCount: 4,
+        prizePool: "$15,000 USD",
+        location: "Online - European Server",
+        rules: "Competitive 90-minute rules. Win gives 3 pts, Draw gives 1 pt.",
+        bannerUrl: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1200&q=80"
+      },
+      {
+        id: "tour-103",
+        title: "Grandmaster Rapid Chess Open",
+        description: "World-class Swiss & Single Elimination rapid tournament for international masters.",
+        game: "Chess",
+        format: "SINGLE_ELIMINATION",
+        status: "UPCOMING",
+        startDate: "2026-12-01",
+        endDate: "2026-12-05",
+        maxParticipants: 16,
+        currentParticipantsCount: 2,
+        prizePool: "$10,000 USD",
+        location: "Zurich Convention Hall",
+        rules: "FIDE Rapid time controls: 15 minutes + 10 seconds increment per move.",
+        bannerUrl: "https://images.unsplash.com/photo-1529699211952-734e80c4d42b?auto=format&fit=crop&w=1200&q=80"
+      }
+    ];
+
+    const DEMO_PARTICIPANTS = [
+      { id: "p1", tournamentId: "tour-101", name: "Sentinels Prime", email: "sentinels@gg.com", seed: 1, wins: 1, losses: 0, draws: 0, points: 3, scoreFor: 2, scoreAgainst: 0, matchesPlayed: 1 },
+      { id: "p2", tournamentId: "tour-101", name: "Fnatic Legion", email: "fnatic@gg.com", seed: 2, wins: 1, losses: 0, draws: 0, points: 3, scoreFor: 2, scoreAgainst: 1, matchesPlayed: 1 },
+      { id: "p3", tournamentId: "tour-101", name: "Paper Rex Elite", email: "prx@gg.com", seed: 3, wins: 0, losses: 0, draws: 0, points: 0, scoreFor: 0, scoreAgainst: 0, matchesPlayed: 0 },
+      { id: "p4", tournamentId: "tour-101", name: "DRX Titans", email: "drx@gg.com", seed: 4, wins: 0, losses: 0, draws: 0, points: 0, scoreFor: 0, scoreAgainst: 0, matchesPlayed: 0 },
+      { id: "p5", tournamentId: "tour-101", name: "LOUD Esports", email: "loud@gg.com", seed: 5, wins: 0, losses: 0, draws: 0, points: 0, scoreFor: 0, scoreAgainst: 0, matchesPlayed: 0 },
+      { id: "p6", tournamentId: "tour-101", name: "Team Liquid", email: "liquid@gg.com", seed: 6, wins: 0, losses: 0, draws: 0, points: 0, scoreFor: 0, scoreAgainst: 0, matchesPlayed: 0 },
+      { id: "p7", tournamentId: "tour-101", name: "NRG Shock", email: "nrg@gg.com", seed: 7, wins: 0, losses: 1, draws: 0, points: 0, scoreFor: 1, scoreAgainst: 2, matchesPlayed: 1 },
+      { id: "p8", tournamentId: "tour-101", name: "Leviatán Apex", email: "lev@gg.com", seed: 8, wins: 0, losses: 1, draws: 0, points: 0, scoreFor: 0, scoreAgainst: 2, matchesPlayed: 1 },
+
+      { id: "p10", tournamentId: "tour-102", name: "Madrid Kings", email: "madrid@fc.com", seed: 1, wins: 2, losses: 0, draws: 0, points: 6, scoreFor: 5, scoreAgainst: 1, matchesPlayed: 2 },
+      { id: "p11", tournamentId: "tour-102", name: "Manchester Storm", email: "manc@fc.com", seed: 2, wins: 1, losses: 1, draws: 0, points: 3, scoreFor: 3, scoreAgainst: 3, matchesPlayed: 2 },
+      { id: "p12", tournamentId: "tour-102", name: "Bayern Blitz", email: "bayern@fc.com", seed: 3, wins: 0, losses: 1, draws: 1, points: 1, scoreFor: 2, scoreAgainst: 4, matchesPlayed: 2 },
+      { id: "p13", tournamentId: "tour-102", name: "Paris Zenith", email: "paris@fc.com", seed: 4, wins: 0, losses: 1, draws: 1, points: 1, scoreFor: 1, scoreAgainst: 3, matchesPlayed: 2 }
+    ];
+
+    const DEMO_MATCHES = [
+      {
+        id: "m1", tournamentId: "tour-101", round: 1, matchNumber: 1, roundName: "Quarter-Finals",
+        participant1Id: "p1", participant1Name: "Sentinels Prime", score1: 2,
+        participant2Id: "p8", participant2Name: "Leviatán Apex", score2: 0,
+        winnerId: "p1", winnerName: "Sentinels Prime", status: "COMPLETED", nextMatchId: "m5", nextMatchSlot: 1
+      },
+      {
+        id: "m2", tournamentId: "tour-101", round: 1, matchNumber: 2, roundName: "Quarter-Finals",
+        participant1Id: "p4", participant1Name: "DRX Titans", score1: null,
+        participant2Id: "p5", participant2Name: "LOUD Esports", score2: null,
+        winnerId: null, winnerName: null, status: "SCHEDULED", nextMatchId: "m5", nextMatchSlot: 2
+      },
+      {
+        id: "m3", tournamentId: "tour-101", round: 1, matchNumber: 3, roundName: "Quarter-Finals",
+        participant1Id: "p2", participant1Name: "Fnatic Legion", score1: 2,
+        participant2Id: "p7", participant2Name: "NRG Shock", score2: 1,
+        winnerId: "p2", winnerName: "Fnatic Legion", status: "COMPLETED", nextMatchId: "m6", nextMatchSlot: 1
+      },
+      {
+        id: "m4", tournamentId: "tour-101", round: 1, matchNumber: 4, roundName: "Quarter-Finals",
+        participant1Id: "p3", participant1Name: "Paper Rex Elite", score1: null,
+        participant2Id: "p6", participant2Name: "Team Liquid", score2: null,
+        winnerId: null, winnerName: null, status: "SCHEDULED", nextMatchId: "m6", nextMatchSlot: 2
+      },
+      {
+        id: "m5", tournamentId: "tour-101", round: 2, matchNumber: 1, roundName: "Semi-Finals",
+        participant1Id: "p1", participant1Name: "Sentinels Prime", score1: null,
+        participant2Id: null, participant2Name: "TBD", score2: null,
+        winnerId: null, winnerName: null, status: "SCHEDULED", nextMatchId: "m7", nextMatchSlot: 1
+      },
+      {
+        id: "m6", tournamentId: "tour-101", round: 2, matchNumber: 2, roundName: "Semi-Finals",
+        participant1Id: "p2", participant1Name: "Fnatic Legion", score1: null,
+        participant2Id: null, participant2Name: "TBD", score2: null,
+        winnerId: null, winnerName: null, status: "SCHEDULED", nextMatchId: "m7", nextMatchSlot: 2
+      },
+      {
+        id: "m7", tournamentId: "tour-101", round: 3, matchNumber: 1, roundName: "Final",
+        participant1Id: null, participant1Name: "TBD", score1: null,
+        participant2Id: null, participant2Name: "TBD", score2: null,
+        winnerId: null, winnerName: null, status: "SCHEDULED", nextMatchId: null, nextMatchSlot: null
+      }
+    ];
+
+    function App() {
+      const [tournaments, setTournaments] = useState(() => {
+        const saved = localStorage.getItem('arenapulse_t');
+        return saved ? JSON.parse(saved) : DEMO_TOURNAMENTS;
+      });
+      const [participants, setParticipants] = useState(() => {
+        const saved = localStorage.getItem('arenapulse_p');
+        return saved ? JSON.parse(saved) : DEMO_PARTICIPANTS;
+      });
+      const [matches, setMatches] = useState(() => {
+        const saved = localStorage.getItem('arenapulse_m');
+        return saved ? JSON.parse(saved) : DEMO_MATCHES;
+      });
+
+      const [view, setView] = useState('dashboard'); // 'dashboard', 'tournaments', 'detail'
+      const [selectedTourId, setSelectedTourId] = useState(null);
+      const [search, setSearch] = useState('');
+      const [statusFilter, setStatusFilter] = useState('');
+
+      // Modals
+      const [modalOpen, setModalOpen] = useState(false);
+      const [editingTour, setEditingTour] = useState(null);
+      const [deletingTour, setDeletingTour] = useState(null);
+      const [scoringMatch, setScoringMatch] = useState(null);
+      const [addPartModal, setAddPartModal] = useState(false);
+
+      // Save to localStorage
+      useEffect(() => {
+        localStorage.setItem('arenapulse_t', JSON.stringify(tournaments));
+      }, [tournaments]);
+      useEffect(() => {
+        localStorage.setItem('arenapulse_p', JSON.stringify(participants));
+      }, [participants]);
+      useEffect(() => {
+        localStorage.setItem('arenapulse_m', JSON.stringify(matches));
+      }, [matches]);
+
+      const selectedTour = tournaments.find(t => t.id === selectedTourId);
+      const currentParticipants = participants.filter(p => p.tournamentId === selectedTourId);
+      const currentMatches = matches.filter(m => m.tournamentId === selectedTourId);
+
+      // Reset Demo Data
+      const handleResetDemo = () => {
+        setTournaments(DEMO_TOURNAMENTS);
+        setParticipants(DEMO_PARTICIPANTS);
+        setMatches(DEMO_MATCHES);
+      };
+
+      // Create / Edit Tournament
+      const handleSaveTournament = (data) => {
+        if (editingTour) {
+          setTournaments(prev => prev.map(t => t.id === editingTour.id ? { ...t, ...data } : t));
+        } else {
+          const newT = {
+            ...data,
+            id: 'tour-' + Date.now(),
+            currentParticipantsCount: 0
+          };
+          setTournaments(prev => [newT, ...prev]);
+        }
+        setModalOpen(false);
+        setEditingTour(null);
+      };
+
+      // Delete Tournament
+      const handleDeleteTournament = (id) => {
+        setTournaments(prev => prev.filter(t => t.id !== id));
+        setParticipants(prev => prev.filter(p => p.tournamentId !== id));
+        setMatches(prev => prev.filter(m => m.tournamentId !== id));
+        setDeletingTour(null);
+        if (selectedTourId === id) {
+          setView('tournaments');
+          setSelectedTourId(null);
+        }
+      };
+
+      // Add Participant
+      const handleAddParticipant = (pData) => {
+        const newPart = {
+          ...pData,
+          id: 'p-' + Date.now(),
+          tournamentId: selectedTourId,
+          seed: currentParticipants.length + 1,
+          matchesPlayed: 0, wins: 0, losses: 0, draws: 0, points: 0, scoreFor: 0, scoreAgainst: 0
+        };
+        setParticipants(prev => [...prev, newPart]);
+        setTournaments(prev => prev.map(t => t.id === selectedTourId ? { ...t, currentParticipantsCount: (t.currentParticipantsCount || 0) + 1 } : t));
+        setAddPartModal(false);
+      };
+
+      // Remove Participant
+      const handleRemoveParticipant = (pId) => {
+        setParticipants(prev => prev.filter(p => p.id !== pId));
+        setTournaments(prev => prev.map(t => t.id === selectedTourId ? { ...t, currentParticipantsCount: Math.max(0, (t.currentParticipantsCount || 1) - 1) } : t));
+      };
+
+      // Generate Brackets
+      const handleGenerateBrackets = () => {
+        if (currentParticipants.length < 2) {
+          alert("Add at least 2 participants before generating fixtures.");
+          return;
+        }
+        const newMatches = [
+          {
+            id: 'gen-m1', tournamentId: selectedTourId, round: 1, matchNumber: 1, roundName: "Semi-Finals",
+            participant1Id: currentParticipants[0]?.id, participant1Name: currentParticipants[0]?.name, score1: null,
+            participant2Id: currentParticipants[1]?.id, participant2Name: currentParticipants[1]?.name, score2: null,
+            winnerId: null, winnerName: null, status: "SCHEDULED", nextMatchId: "gen-m3", nextMatchSlot: 1
+          },
+          {
+            id: 'gen-m2', tournamentId: selectedTourId, round: 1, matchNumber: 2, roundName: "Semi-Finals",
+            participant1Id: currentParticipants[2]?.id || null, participant1Name: currentParticipants[2]?.name || "TBD", score1: null,
+            participant2Id: currentParticipants[3]?.id || null, participant2Name: currentParticipants[3]?.name || "TBD", score2: null,
+            winnerId: null, winnerName: null, status: "SCHEDULED", nextMatchId: "gen-m3", nextMatchSlot: 2
+          },
+          {
+            id: 'gen-m3', tournamentId: selectedTourId, round: 2, matchNumber: 1, roundName: "Final",
+            participant1Id: null, participant1Name: "TBD", score1: null,
+            participant2Id: null, participant2Name: "TBD", score2: null,
+            winnerId: null, winnerName: null, status: "SCHEDULED", nextMatchId: null, nextMatchSlot: null
+          }
+        ];
+
+        setMatches(prev => [...prev.filter(m => m.tournamentId !== selectedTourId), ...newMatches]);
+        setTournaments(prev => prev.map(t => t.id === selectedTourId ? { ...t, status: "ONGOING" } : t));
+      };
+
+      // Save Match Score & Advance Winner
+      const handleSaveScore = (mId, s1, s2, isCompleted) => {
+        setMatches(prev => {
+          const updated = [...prev];
+          const m = updated.find(x => x.id === mId);
+          if (!m) return prev;
+
+          m.score1 = Number(s1);
+          m.score2 = Number(s2);
+          if (isCompleted) {
+            m.status = "COMPLETED";
+            if (s1 > s2) {
+              m.winnerId = m.participant1Id;
+              m.winnerName = m.participant1Name;
+            } else if (s2 > s1) {
+              m.winnerId = m.participant2Id;
+              m.winnerName = m.participant2Name;
+            } else {
+              m.winnerId = null;
+              m.winnerName = "Draw";
+            }
+
+            // Propagate winner to next match slot
+            if (m.nextMatchId && m.winnerId) {
+              const nextM = updated.find(x => x.id === m.nextMatchId);
+              if (nextM) {
+                if (m.nextMatchSlot === 1) {
+                  nextM.participant1Id = m.winnerId;
+                  nextM.participant1Name = m.winnerName;
+                } else {
+                  nextM.participant2Id = m.winnerId;
+                  nextM.participant2Name = m.winnerName;
+                }
+              }
+            }
+          }
+          return updated;
+        });
+        setScoringMatch(null);
+      };
+
+      // Filtered Tournaments
+      const filtered = tournaments.filter(t => {
+        if (search) {
+          const q = search.toLowerCase();
+          if (!t.title.toLowerCase().includes(q) && !t.game.toLowerCase().includes(q)) return false;
+        }
+        if (statusFilter && t.status !== statusFilter) return false;
+        return true;
+      });
+
+      return (
+        <div className="min-h-screen flex flex-col">
+          {/* Header */}
+          <header className="sticky top-0 z-40 glass-panel border-b border-slate-800 bg-[#0a0e17]/90 px-6 py-3.5">
+            <div className="max-w-7xl mx-auto flex items-center justify-between">
+              <div 
+                onClick={() => { setView('dashboard'); setSelectedTourId(null); }} 
+                className="flex items-center gap-3 cursor-pointer group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/25">
+                  <TrophyIcon />
+                </div>
+                <div>
+                  <span className="font-extrabold text-xl tracking-tight text-white">Arena<span className="text-indigo-400">Pulse</span></span>
+                  <span className="hidden sm:inline-block ml-2 text-[10px] uppercase font-bold text-indigo-300 bg-indigo-950 px-2 py-0.5 rounded-full border border-indigo-800">Spring + MongoDB + React</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <nav className="hidden md:flex gap-1 bg-slate-900/60 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+                  <button onClick={() => { setView('dashboard'); setSelectedTourId(null); }} className={`px-3 py-1.5 rounded-lg ${view === 'dashboard' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}>Dashboard</button>
+                  <button onClick={() => { setView('tournaments'); setSelectedTourId(null); }} className={`px-3 py-1.5 rounded-lg ${view === 'tournaments' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}>Tournaments</button>
+                </nav>
+
+                <button onClick={handleResetDemo} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700">
+                  <SparklesIcon className="w-3.5 h-3.5 text-indigo-400" />
+                  <span className="hidden sm:inline">Reset Demo</span>
+                </button>
+
+                <button onClick={() => { setEditingTour(null); setModalOpen(true); }} className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30">
+                  <PlusIcon />
+                  <span>Create Tournament</span>
+                </button>
+              </div>
+            </div>
+          </header>
+
+          {/* Main Body */}
+          <main className="flex-1 max-w-7xl w-full mx-auto p-6 sm:p-8">
+            {view === 'dashboard' && (
+              <div className="space-y-8">
+                {/* Hero */}
+                <div className="relative rounded-3xl p-8 bg-gradient-to-r from-indigo-950 via-slate-900 to-slate-900 border border-slate-800">
+                  <span className="text-xs uppercase tracking-wider font-bold text-indigo-400 bg-indigo-950/80 px-3 py-1 rounded-full border border-indigo-800">Tournament Command Engine</span>
+                  <h1 className="text-3xl font-extrabold text-white mt-3">Ready to Host, Bracket &amp; Score</h1>
+                  <p className="text-xs text-slate-300 max-w-xl mt-1.5">Manage sports and esports tournaments with automated brackets, match score propagation, participant rosters, and live standings.</p>
+                  <div className="mt-5 flex gap-3">
+                    <button onClick={() => { setEditingTour(null); setModalOpen(true); }} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-2">
+                      <PlusIcon /> Create Tournament
+                    </button>
+                    <button onClick={() => setView('tournaments')} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-2">
+                      View Tournaments <ArrowRightIcon />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  <div className="glass-card p-5 rounded-2xl border border-slate-800">
+                    <p className="text-xs font-semibold uppercase text-slate-400">Tournaments</p>
+                    <h3 className="text-3xl font-extrabold text-white mt-1">{tournaments.length}</h3>
+                  </div>
+                  <div className="glass-card p-5 rounded-2xl border border-slate-800">
+                    <p className="text-xs font-semibold uppercase text-slate-400">Live Battles</p>
+                    <h3 className="text-3xl font-extrabold text-amber-400 mt-1">{tournaments.filter(t => t.status === 'ONGOING').length}</h3>
+                  </div>
+                  <div className="glass-card p-5 rounded-2xl border border-slate-800">
+                    <p className="text-xs font-semibold uppercase text-slate-400">Registered Teams</p>
+                    <h3 className="text-3xl font-extrabold text-emerald-400 mt-1">{participants.length}</h3>
+                  </div>
+                  <div className="glass-card p-5 rounded-2xl border border-slate-800">
+                    <p className="text-xs font-semibold uppercase text-slate-400">Matches Concluded</p>
+                    <h3 className="text-3xl font-extrabold text-purple-400 mt-1">{matches.filter(m => m.status === 'COMPLETED').length}</h3>
+                  </div>
+                </div>
+
+                {/* Live Tournaments */}
+                <div>
+                  <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <SwordsIcon className="w-5 h-5 text-emerald-400" /> Live Tournaments
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    {tournaments.map(t => (
+                      <div key={t.id} className="glass-card rounded-2xl overflow-hidden border border-slate-800 flex flex-col justify-between">
+                        <div>
+                          <img src={t.bannerUrl} alt={t.title} className="w-full h-36 object-cover" />
+                          <div className="p-4">
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">{t.game}</span>
+                            <h3 onClick={() => { setSelectedTourId(t.id); setView('detail'); }} className="text-base font-bold text-white mt-2 cursor-pointer hover:text-indigo-400 truncate">{t.title}</h3>
+                            <p className="text-xs text-slate-400 line-clamp-2 mt-1">{t.description}</p>
+                            <div className="mt-3 text-xs text-amber-300 font-bold flex items-center gap-1">
+                              <AwardIcon /> {t.prizePool}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-4 pt-0 flex gap-2">
+                          <button onClick={() => { setSelectedTourId(t.id); setView('detail'); }} className="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1">
+                            Manage &amp; Bracket <ArrowRightIcon className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => { setEditingTour(t); setModalOpen(true); }} className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl">
+                            <EditIcon className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => setDeletingTour(t)} className="p-2 bg-red-950/40 hover:bg-red-900/60 text-red-300 rounded-xl">
+                            <TrashIcon className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {view === 'tournaments' && (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h1 className="text-2xl font-extrabold text-white">All Tournaments ({filtered.length})</h1>
+                  <button onClick={() => { setEditingTour(null); setModalOpen(true); }} className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5">
+                    <PlusIcon /> New Tournament
+                  </button>
+                </div>
+
+                {/* Filter */}
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Search tournaments by name or game..."
+                    className="flex-1 px-4 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
+                  />
+                  <select
+                    value={statusFilter}
+                    onChange={e => setStatusFilter(e.target.value)}
+                    className="px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
+                  >
+                    <option value="">All Statuses</option>
+                    <option value="UPCOMING">Upcoming</option>
+                    <option value="ONGOING">Ongoing</option>
+                    <option value="COMPLETED">Completed</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  {filtered.map(t => (
+                    <div key={t.id} className="glass-card rounded-2xl overflow-hidden border border-slate-800 flex flex-col justify-between">
+                      <div>
+                        <img src={t.bannerUrl} alt={t.title} className="w-full h-36 object-cover" />
+                        <div className="p-4">
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">{t.game}</span>
+                          <h3 onClick={() => { setSelectedTourId(t.id); setView('detail'); }} className="text-base font-bold text-white mt-2 cursor-pointer hover:text-indigo-400 truncate">{t.title}</h3>
+                          <p className="text-xs text-slate-400 line-clamp-2 mt-1">{t.description}</p>
+                          <div className="mt-3 text-xs text-amber-300 font-bold flex items-center gap-1">
+                            <AwardIcon /> {t.prizePool}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-4 pt-0 flex gap-2">
+                        <button onClick={() => { setSelectedTourId(t.id); setView('detail'); }} className="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1">
+                          Manage &amp; Bracket <ArrowRightIcon className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => { setEditingTour(t); setModalOpen(true); }} className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl">
+                          <EditIcon className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => setDeletingTour(t)} className="p-2 bg-red-950/40 hover:bg-red-900/60 text-red-300 rounded-xl">
+                          <TrashIcon className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {view === 'detail' && selectedTour && (
+              <div className="space-y-6">
+                <button onClick={() => setView('tournaments')} className="text-xs font-semibold text-slate-400 hover:text-white flex items-center gap-1">
+                  <ArrowLeftIcon /> Back to Tournaments
+                </button>
+
+                {/* Banner */}
+                <div className="glass-panel rounded-3xl overflow-hidden border border-slate-800">
+                  <div className="relative h-48 bg-slate-900">
+                    <img src={selectedTour.bannerUrl} alt={selectedTour.title} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0a0e17] to-transparent" />
+                    <div className="absolute bottom-4 left-6 right-6 flex justify-between items-end">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-600 text-white">{selectedTour.game}</span>
+                        <h1 className="text-2xl font-extrabold text-white mt-1">{selectedTour.title}</h1>
+                      </div>
+                      <button onClick={handleGenerateBrackets} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg">
+                        <SparklesIcon /> Generate / Reset Brackets
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 divide-x divide-slate-800 border-t border-slate-800 p-3 text-xs bg-slate-900/40 text-center">
+                    <div><span className="text-slate-400">Prize Pool:</span> <strong className="text-amber-300">{selectedTour.prizePool}</strong></div>
+                    <div><span className="text-slate-400">Location:</span> <strong className="text-white">{selectedTour.location}</strong></div>
+                    <div><span className="text-slate-400">Capacity:</span> <strong className="text-white">{currentParticipants.length} / {selectedTour.maxParticipants}</strong></div>
+                  </div>
+                </div>
+
+                {/* Tabs / Content */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Left 2 Cols: Brackets & Matches */}
+                  <div className="lg:col-span-2 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-base font-bold text-white flex items-center gap-2">
+                        <SwordsIcon className="text-indigo-400" /> Tournament Brackets &amp; Fixtures ({currentMatches.length})
+                      </h3>
+                      <span className="text-xs text-slate-400">Click any card to enter scores</span>
+                    </div>
+
+                    {currentMatches.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {currentMatches.map(m => (
+                          <div
+                            key={m.id}
+                            onClick={() => setScoringMatch(m)}
+                            className="glass-card rounded-xl p-4 border border-slate-800 hover:border-indigo-500 cursor-pointer transition-all"
+                          >
+                            <div className="flex justify-between text-[10px] text-slate-400 mb-2">
+                              <span className="font-bold text-indigo-400">{m.roundName} #{m.matchNumber}</span>
+                              <span className={m.status === 'COMPLETED' ? 'text-emerald-400 font-bold' : 'text-slate-500'}>
+                                {m.status}
+                              </span>
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <div className={`flex justify-between items-center p-2 rounded-lg ${m.winnerId === m.participant1Id && m.status === 'COMPLETED' ? 'bg-indigo-950/80 font-bold text-white border border-indigo-700' : 'bg-slate-900/60 text-slate-300'}`}>
+                                <span className="text-xs truncate">{m.participant1Name || 'TBD'}</span>
+                                <span className="font-mono text-xs">{m.score1 !== null ? m.score1 : '-'}</span>
+                              </div>
+                              <div className={`flex justify-between items-center p-2 rounded-lg ${m.winnerId === m.participant2Id && m.status === 'COMPLETED' ? 'bg-indigo-950/80 font-bold text-white border border-indigo-700' : 'bg-slate-900/60 text-slate-300'}`}>
+                                <span className="text-xs truncate">{m.participant2Name || 'TBD'}</span>
+                                <span className="font-mono text-xs">{m.score2 !== null ? m.score2 : '-'}</span>
+                              </div>
+                            </div>
+                            <div className="mt-2 text-[10px] text-slate-400 flex justify-between items-center">
+                              <span>{m.winnerName ? `Winner: ${m.winnerName}` : 'Click to score'}</span>
+                              <EditIcon className="w-3 h-3 text-indigo-400" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="glass-panel p-8 text-center rounded-2xl border border-slate-800">
+                        <TrophyIcon className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                        <h4 className="text-sm font-bold text-white">No Fixtures Generated Yet</h4>
+                        <p className="text-xs text-slate-400 mt-1">Click "Generate / Reset Brackets" above to generate the tournament tree.</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right 1 Col: Participants Roster */}
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-base font-bold text-white flex items-center gap-2">
+                        <UsersIcon className="text-indigo-400" /> Roster ({currentParticipants.length})
+                      </h3>
+                      <button onClick={() => setAddPartModal(true)} className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1">
+                        <PlusIcon /> Add Team
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      {currentParticipants.map((p, idx) => (
+                        <div key={p.id} className="glass-card p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-6 h-6 rounded-lg bg-slate-800 text-indigo-400 text-xs font-mono font-bold flex items-center justify-center">#{p.seed || idx + 1}</span>
+                            <div>
+                              <p className="text-xs font-bold text-white">{p.name}</p>
+                              <p className="text-[10px] text-slate-500">{p.email || 'No email'}</p>
+                            </div>
+                          </div>
+                          <button onClick={() => handleRemoveParticipant(p.id)} className="text-slate-500 hover:text-red-400 p-1">
+                            <TrashIcon className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </main>
+
+          {/* Modal: Create/Edit Tournament */}
+          {modalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div className="glass-panel w-full max-w-lg rounded-2xl border border-slate-700 p-6 space-y-4">
+                <h3 className="text-base font-bold text-white">{editingTour ? 'Edit Tournament' : 'Create Tournament'}</h3>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.target);
+                  handleSaveTournament({
+                    title: fd.get('title'),
+                    game: fd.get('game'),
+                    description: fd.get('description'),
+                    prizePool: fd.get('prizePool'),
+                    location: fd.get('location'),
+                    maxParticipants: parseInt(fd.get('maxParticipants')) || 8,
+                    status: fd.get('status'),
+                    bannerUrl: fd.get('bannerUrl') || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1200&q=80'
+                  });
+                }} className="space-y-3 text-xs">
+                  <div>
+                    <label className="block text-slate-300 font-semibold mb-1">Title *</label>
+                    <input name="title" defaultValue={editingTour?.title || ''} required className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Sport / Game *</label>
+                      <input name="game" defaultValue={editingTour?.game || 'Valorant'} required className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white" />
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Prize Pool</label>
+                      <input name="prizePool" defaultValue={editingTour?.prizePool || '$5,000 USD'} className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Max Capacity</label>
+                      <input type="number" name="maxParticipants" defaultValue={editingTour?.maxParticipants || 8} min="2" className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white" />
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Status</label>
+                      <select name="status" defaultValue={editingTour?.status || 'UPCOMING'} className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white">
+                        <option value="UPCOMING">Upcoming</option>
+                        <option value="ONGOING">Ongoing</option>
+                        <option value="COMPLETED">Completed</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-slate-300 font-semibold mb-1">Description</label>
+                    <textarea name="description" defaultValue={editingTour?.description || ''} rows={2} className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white" />
+                  </div>
+                  <div>
+                    <label className="block text-slate-300 font-semibold mb-1">Cover Banner URL</label>
+                    <input name="bannerUrl" defaultValue={editingTour?.bannerUrl || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1200&q=80'} className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white" />
+                  </div>
+                  <div className="pt-3 flex justify-end gap-2 border-t border-slate-800">
+                    <button type="button" onClick={() => setModalOpen(false)} className="px-3 py-2 text-slate-400 hover:text-white">Cancel</button>
+                    <button type="submit" className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold">Save</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Modal: Delete Confirmation */}
+          {deletingTour && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div className="glass-panel w-full max-w-sm rounded-2xl border border-red-900 p-6 space-y-4">
+                <h3 className="text-base font-bold text-white">Delete Tournament?</h3>
+                <p className="text-xs text-slate-300">Are you sure you want to permanently delete "{deletingTour.title}"? All brackets and participants will be deleted.</p>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button onClick={() => setDeletingTour(null)} className="px-3 py-2 text-xs text-slate-400">Cancel</button>
+                  <button onClick={() => handleDeleteTournament(deletingTour.id)} className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl">Delete</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal: Score Match */}
+          {scoringMatch && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div className="glass-panel w-full max-w-sm rounded-2xl border border-slate-700 p-6 space-y-4">
+                <h3 className="text-base font-bold text-white">Update Match Result</h3>
+                <p className="text-xs text-slate-400">{scoringMatch.roundName} #{scoringMatch.matchNumber}</p>
+
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.target);
+                  handleSaveScore(scoringMatch.id, fd.get('s1'), fd.get('s2'), fd.get('done') === 'on');
+                }} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3 text-center">
+                    <div>
+                      <p className="text-xs font-bold text-white truncate mb-1">{scoringMatch.participant1Name || 'P1'}</p>
+                      <input name="s1" type="number" defaultValue={scoringMatch.score1 ?? 0} className="w-16 py-2 bg-slate-800 text-center font-mono font-bold text-xl text-white rounded-xl border border-slate-700" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-white truncate mb-1">{scoringMatch.participant2Name || 'P2'}</p>
+                      <input name="s2" type="number" defaultValue={scoringMatch.score2 ?? 0} className="w-16 py-2 bg-slate-800 text-center font-mono font-bold text-xl text-white rounded-xl border border-slate-700" />
+                    </div>
+                  </div>
+
+                  <label className="flex items-center gap-2 text-xs text-slate-300">
+                    <input type="checkbox" name="done" defaultChecked={true} className="w-4 h-4 rounded text-indigo-600 bg-slate-800" />
+                    <span>Conclude match &amp; advance winner</span>
+                  </label>
+
+                  <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+                    <button type="button" onClick={() => setScoringMatch(null)} className="px-3 py-1.5 text-xs text-slate-400">Cancel</button>
+                    <button type="submit" className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl">Save Result</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Modal: Add Team */}
+          {addPartModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div className="glass-panel w-full max-w-sm rounded-2xl border border-slate-700 p-6 space-y-4">
+                <h3 className="text-base font-bold text-white">Register Team / Player</h3>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.target);
+                  handleAddParticipant({
+                    name: fd.get('name'),
+                    email: fd.get('email')
+                  });
+                }} className="space-y-3 text-xs">
+                  <div>
+                    <label className="block text-slate-300 font-semibold mb-1">Team / Player Name *</label>
+                    <input name="name" required placeholder="e.g. Sentinels, Magnus" className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white" />
+                  </div>
+                  <div>
+                    <label className="block text-slate-300 font-semibold mb-1">Email / Contact</label>
+                    <input name="email" type="email" placeholder="contact@team.gg" className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white" />
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+                    <button type="button" onClick={() => setAddPartModal(false)} className="px-3 py-1.5 text-slate-400">Cancel</button>
+                    <button type="submit" className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl">Add Team</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
